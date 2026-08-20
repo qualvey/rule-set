@@ -547,7 +547,7 @@ jobs:
 
       - name: Generate sing-box ruleset
         run: |
-          rm -f singbox/version1/*-ipcidr.json singbox/version2/*-ipcidr.json singbox/version3/*-ipcidr.json singbox/version4/*-ipcidr.json singbox/version5/*-ipcidr.json
+          rm -f singbox/version1/*.json singbox/version2/*.json singbox/version3/*.json singbox/version4/*.json singbox/version5/*.json
 
           for file in meta/*.list; do
               awk -F',' '
@@ -616,13 +616,16 @@ jobs:
                   printf "}\n";
               }' "$file" > "singbox/version1/$(basename "$file" ".list").json.tmp"
 
-              output_file="singbox/version1/$(basename "$file" ".list").json"
-              python3 - "$output_file.tmp" "$output_file" "${output_file%.json}-ipcidr.json" <<'PY'
+              base_name=$(basename "$file" ".list")
+              source_file="singbox/version1/${base_name}.json.tmp"
+              site_file="singbox/version1/${base_name}-site.json"
+              ip_file="singbox/version1/${base_name}-ip.json"
+              python3 - "$source_file" "$site_file" "$ip_file" <<'PY'
           import json
           import os
           import sys
 
-          source_file, domain_file, ipcidr_file = sys.argv[1:]
+          source_file, site_file, ip_file = sys.argv[1:]
           with open(source_file, encoding="utf-8") as source:
               ruleset = json.load(source)
 
@@ -630,22 +633,22 @@ jobs:
           ip_cidr = rule.pop("ip_cidr", None)
 
           if rule:
-              with open(domain_file, "w", encoding="utf-8") as domain_output:
-                  json.dump(ruleset, domain_output, indent=2)
-                  domain_output.write("\n")
+              with open(site_file, "w", encoding="utf-8") as site_output:
+                  json.dump(ruleset, site_output, indent=2)
+                  site_output.write("\n")
           else:
-              os.remove(domain_file) if os.path.exists(domain_file) else None
+              os.remove(site_file) if os.path.exists(site_file) else None
 
           if ip_cidr is not None:
-              with open(ipcidr_file, "w", encoding="utf-8") as ipcidr_output:
+              with open(ip_file, "w", encoding="utf-8") as ip_output:
                   json.dump(
                       {"version": ruleset["version"], "rules": [{"ip_cidr": ip_cidr}]},
-                      ipcidr_output,
+                      ip_output,
                       indent=2,
                   )
-                  ipcidr_output.write("\n")
+                  ip_output.write("\n")
           PY
-              rm -f "$output_file.tmp"
+              rm -f "$source_file"
           done
 
           rm -f singbox/version1/*-resolve.json

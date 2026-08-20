@@ -8,6 +8,10 @@ on:
       - master
     paths-ignore:
       - "**/README.md"
+
+permissions:
+    contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -849,7 +853,7 @@ jobs:
           git checkout -b ruleset
           git add .
           git commit -m "Auto Update Ruleset ${update_version}"
-          git remote add origin "https://${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}"
+          git remote add origin "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}"
           git push -f origin ruleset
 
       - name: Purge jsdelivr CDN
